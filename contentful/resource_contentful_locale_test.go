@@ -1,11 +1,12 @@
 package contentful
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	contentful "github.com/labd/contentful-go"
 )
 
@@ -136,7 +137,10 @@ func testAccContentfulLocaleDestroy(s *terraform.State) error {
 		client := testAccProvider.Meta().(*contentful.Client)
 
 		_, err := client.Locales.Get(spaceID, localeID)
-		if _, ok := err.(contentful.NotFoundError); ok {
+
+		// This is caused by a bug in the client library that tries to cast
+		// error.details to a map but it is a string in this case
+		if _, ok := err.(*json.UnmarshalTypeError); ok {
 			return nil
 		}
 
