@@ -16,3 +16,4 @@ local/
 !/local/*.example
 
 vendor/
+coverage.out
