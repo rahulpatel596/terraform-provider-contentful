@@ -2,11 +2,13 @@ package contentful
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulLocale() *schema.Resource {
 	return &schema.Resource{
+		Description: "A Contentful Locale represents a language and region combination.",
+
 		Create: resourceCreateLocale,
 		Read:   resourceReadLocale,
 		Update: resourceUpdateLocale,

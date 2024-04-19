@@ -3,12 +3,12 @@
 page_title: "contentful_webhook Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Webhook represents a webhook that can be used to notify external services of changes in a space.
 ---
 
 # contentful_webhook (Resource)
 
-
+A Contentful Webhook represents a webhook that can be used to notify external services of changes in a space.
 
 ## Example Usage
 

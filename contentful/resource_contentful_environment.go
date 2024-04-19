@@ -2,15 +2,16 @@ package contentful
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulEnvironment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceCreateEnvironment,
-		Read:   resourceReadEnvironment,
-		Update: resourceUpdateEnvironment,
-		Delete: resourceDeleteEnvironment,
+		Description: "A Contentful Environment represents a space environment.",
+		Create:      resourceCreateEnvironment,
+		Read:        resourceReadEnvironment,
+		Update:      resourceUpdateEnvironment,
+		Delete:      resourceDeleteEnvironment,
 
 		Schema: map[string]*schema.Schema{
 			"version": {

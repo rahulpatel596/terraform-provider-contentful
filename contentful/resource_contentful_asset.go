@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulAsset() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceCreateAsset,
-		Read:   resourceReadAsset,
-		Update: resourceUpdateAsset,
-		Delete: resourceDeleteAsset,
+		Description: "A Contentful Asset represents a file that can be used in entries.",
+		Create:      resourceCreateAsset,
+		Read:        resourceReadAsset,
+		Update:      resourceUpdateAsset,
+		Delete:      resourceDeleteAsset,
 
 		Schema: map[string]*schema.Schema{
 			"asset_id": {

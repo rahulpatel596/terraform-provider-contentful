@@ -3,12 +3,12 @@
 page_title: "contentful_space Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Space represents a space in Contentful.
 ---
 
 # contentful_space (Resource)
 
-
+A Contentful Space represents a space in Contentful.
 
 ## Example Usage
 

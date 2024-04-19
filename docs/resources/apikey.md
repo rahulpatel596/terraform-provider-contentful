@@ -3,12 +3,12 @@
 page_title: "contentful_apikey Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful API Key represents a token that can be used to authenticate against the Contentful Content Delivery API and Content Preview API.
 ---
 
 # contentful_apikey (Resource)
 
-
+A Contentful API Key represents a token that can be used to authenticate against the Contentful Content Delivery API and Content Preview API.
 
 ## Example Usage
 

@@ -3,12 +3,12 @@
 page_title: "contentful_entry Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Entry represents a piece of content in a space.
 ---
 
 # contentful_entry (Resource)
 
-
+A Contentful Entry represents a piece of content in a space.
 
 ## Example Usage
 
