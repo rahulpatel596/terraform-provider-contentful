@@ -3,12 +3,12 @@
 page_title: "contentful_asset Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Asset represents a file that can be used in entries.
 ---
 
 # contentful_asset (Resource)
 
-
+A Contentful Asset represents a file that can be used in entries.
 
 ## Example Usage
 
@@ -27,7 +27,7 @@ resource "contentful_asset" "example_asset" {
       locale  = "en-US"
       content = "asset description"
     }
-    file = {
+    file {
       upload      = "https://images.ctfassets.net/fo9twyrwpveg/2VQx7vz73aMEYi20MMgCk0/66e502115b1f1f973a944b4bd2cc536f/IC-1H_Modern_Stack_Website.svg"
       fileName    = "example.jpeg"
       contentType = "image/jpeg"

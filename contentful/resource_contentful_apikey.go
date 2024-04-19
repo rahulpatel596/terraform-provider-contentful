@@ -2,11 +2,13 @@ package contentful
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulAPIKey() *schema.Resource {
 	return &schema.Resource{
+		Description: "A Contentful API Key represents a token that can be used to authenticate against the Contentful Content Delivery API and Content Preview API.",
+
 		Create: resourceCreateAPIKey,
 		Read:   resourceReadAPIKey,
 		Update: resourceUpdateAPIKey,

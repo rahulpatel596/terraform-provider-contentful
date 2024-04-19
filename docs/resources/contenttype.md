@@ -3,12 +3,12 @@
 page_title: "contentful_contenttype Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Content Type represents a structure for entries.
 ---
 
 # contentful_contenttype (Resource)
 
-
+A Contentful Content Type represents a structure for entries.
 
 ## Example Usage
 

@@ -2,11 +2,13 @@ package contentful
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulSpace() *schema.Resource {
 	return &schema.Resource{
+		Description: "A Contentful Space represents a space in Contentful.",
+
 		Create: resourceSpaceCreate,
 		Read:   resourceSpaceRead,
 		Update: resourceSpaceUpdate,

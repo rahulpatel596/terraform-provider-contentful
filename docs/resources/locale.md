@@ -3,12 +3,12 @@
 page_title: "contentful_locale Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Locale represents a language and region combination.
 ---
 
 # contentful_locale (Resource)
 
-
+A Contentful Locale represents a language and region combination.
 
 ## Example Usage
 

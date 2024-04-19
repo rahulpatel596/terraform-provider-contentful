@@ -2,11 +2,13 @@ package contentful
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	contentful "github.com/labd/contentful-go"
+	"github.com/labd/contentful-go"
 )
 
 func resourceContentfulWebhook() *schema.Resource {
 	return &schema.Resource{
+		Description: "A Contentful Webhook represents a webhook that can be used to notify external services of changes in a space.",
+
 		Create: resourceCreateWebhook,
 		Read:   resourceReadWebhook,
 		Update: resourceUpdateWebhook,

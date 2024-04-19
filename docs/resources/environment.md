@@ -3,12 +3,12 @@
 page_title: "contentful_environment Resource - terraform-provider-contentful"
 subcategory: ""
 description: |-
-  
+  A Contentful Environment represents a space environment.
 ---
 
 # contentful_environment (Resource)
 
-
+A Contentful Environment represents a space environment.
 
 ## Example Usage
 
