@@ -28,6 +28,28 @@ resource "contentful_entry" "example_entry" {
     content = "Lettuce is healthy!"
     locale  = "en-US"
   }
+  field {
+    id     = "content"
+    locale = "en-US"
+    content = jsonencode({
+      data = {},
+      content = [
+        {
+          nodeType = "paragraph",
+          content = [
+            {
+              nodeType = "text",
+              marks    = [],
+              value    = "This is a paragraph",
+              data     = {},
+            },
+          ],
+          data = {},
+        }
+      ],
+      nodeType = "document"
+    })
+  }
   published  = false
   archived   = false
   depends_on = [contentful_contenttype.mycontenttype]
@@ -57,7 +79,7 @@ resource "contentful_entry" "example_entry" {
 
 Required:
 
-- `content` (String)
+- `content` (String) The content of the field. If the field type is Richtext the content can be passed as stringified JSON (see example).
 - `locale` (String)
 
 Read-Only:

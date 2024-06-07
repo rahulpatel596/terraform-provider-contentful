@@ -1,6 +1,10 @@
 package contentful
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
 )
@@ -9,10 +13,10 @@ func resourceContentfulEntry() *schema.Resource {
 	return &schema.Resource{
 		Description: "A Contentful Entry represents a piece of content in a space.",
 
-		Create: resourceCreateEntry,
-		Read:   resourceReadEntry,
-		Update: resourceUpdateEntry,
-		Delete: resourceDeleteEntry,
+		CreateContext: resourceCreateEntry,
+		ReadContext:   resourceReadEntry,
+		UpdateContext: resourceUpdateEntry,
+		DeleteContext: resourceDeleteEntry,
 
 		Schema: map[string]*schema.Schema{
 			"entry_id": {
@@ -45,8 +49,9 @@ func resourceContentfulEntry() *schema.Resource {
 							Required: true,
 						},
 						"content": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The content of the field. If the field type is Richtext the content can be passed as stringified JSON (see example).",
 						},
 						"locale": {
 							Type:     schema.TypeString,
@@ -67,7 +72,7 @@ func resourceContentfulEntry() *schema.Resource {
 	}
 }
 
-func resourceCreateEntry(d *schema.ResourceData, m interface{}) (err error) {
+func resourceCreateEntry(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 
 	fieldProperties := map[string]interface{}{}
@@ -75,7 +80,7 @@ func resourceCreateEntry(d *schema.ResourceData, m interface{}) (err error) {
 	for i := 0; i < len(rawField); i++ {
 		field := rawField[i].(map[string]interface{})
 		fieldProperties[field["id"].(string)] = map[string]interface{}{}
-		fieldProperties[field["id"].(string)].(map[string]interface{})[field["locale"].(string)] = field["content"].(string)
+		fieldProperties[field["id"].(string)].(map[string]interface{})[field["locale"].(string)] = parseContentValue(field["content"].(string))
 	}
 
 	entry := &contentful.Entry{
@@ -86,32 +91,32 @@ func resourceCreateEntry(d *schema.ResourceData, m interface{}) (err error) {
 		},
 	}
 
-	err = client.Entries.Upsert(d.Get("space_id").(string), d.Get("contenttype_id").(string), entry)
+	err := client.Entries.Upsert(d.Get("space_id").(string), d.Get("contenttype_id").(string), entry)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err := setEntryProperties(d, entry); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(entry.Sys.ID)
 
 	if err := setEntryState(d, m); err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return err
+	return parseError(err)
 }
 
-func resourceUpdateEntry(d *schema.ResourceData, m interface{}) (err error) {
+func resourceUpdateEntry(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	entryID := d.Id()
 
 	entry, err := client.Entries.Get(spaceID, entryID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	fieldProperties := map[string]interface{}{}
@@ -119,7 +124,7 @@ func resourceUpdateEntry(d *schema.ResourceData, m interface{}) (err error) {
 	for i := 0; i < len(rawField); i++ {
 		field := rawField[i].(map[string]interface{})
 		fieldProperties[field["id"].(string)] = map[string]interface{}{}
-		fieldProperties[field["id"].(string)].(map[string]interface{})[field["locale"].(string)] = field["content"].(string)
+		fieldProperties[field["id"].(string)].(map[string]interface{})[field["locale"].(string)] = parseContentValue(field["content"].(string))
 	}
 
 	entry.Fields = fieldProperties
@@ -127,20 +132,20 @@ func resourceUpdateEntry(d *schema.ResourceData, m interface{}) (err error) {
 
 	err = client.Entries.Upsert(d.Get("space_id").(string), d.Get("contenttype_id").(string), entry)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(entry.Sys.ID)
 
 	if err := setEntryProperties(d, entry); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err := setEntryState(d, m); err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return err
+	return nil
 }
 
 func setEntryState(d *schema.ResourceData, m interface{}) (err error) {
@@ -165,31 +170,42 @@ func setEntryState(d *schema.ResourceData, m interface{}) (err error) {
 	return err
 }
 
-func resourceReadEntry(d *schema.ResourceData, m interface{}) (err error) {
+func resourceReadEntry(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	entryID := d.Id()
 
 	entry, err := client.Entries.Get(spaceID, entryID)
-	if _, ok := err.(contentful.NotFoundError); ok {
+	var notFoundError contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		d.SetId("")
 		return nil
 	}
 
-	return setEntryProperties(d, entry)
+	err = setEntryProperties(d, entry)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceDeleteEntry(d *schema.ResourceData, m interface{}) (err error) {
+func resourceDeleteEntry(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	entryID := d.Id()
 
-	_, err = client.Entries.Get(spaceID, entryID)
+	_, err := client.Entries.Get(spaceID, entryID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return client.Entries.Delete(spaceID, entryID)
+	err = client.Entries.Delete(spaceID, entryID)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
 func setEntryProperties(d *schema.ResourceData, entry *contentful.Entry) (err error) {
@@ -206,4 +222,14 @@ func setEntryProperties(d *schema.ResourceData, entry *contentful.Entry) (err er
 	}
 
 	return err
+}
+
+func parseContentValue(value interface{}) interface{} {
+	var content interface{}
+	err := json.Unmarshal([]byte(value.(string)), &content)
+	if err != nil {
+		content = value
+	}
+
+	return content
 }

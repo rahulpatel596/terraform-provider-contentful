@@ -1,7 +1,9 @@
 package contentful
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -10,11 +12,11 @@ import (
 
 func resourceContentfulAsset() *schema.Resource {
 	return &schema.Resource{
-		Description: "A Contentful Asset represents a file that can be used in entries.",
-		Create:      resourceCreateAsset,
-		Read:        resourceReadAsset,
-		Update:      resourceUpdateAsset,
-		Delete:      resourceDeleteAsset,
+		Description:   "A Contentful Asset represents a file that can be used in entries.",
+		CreateContext: resourceCreateAsset,
+		ReadContext:   resourceReadAsset,
+		UpdateContext: resourceUpdateAsset,
+		DeleteContext: resourceDeleteAsset,
 
 		Schema: map[string]*schema.Schema{
 			"asset_id": {
@@ -142,7 +144,7 @@ func resourceContentfulAsset() *schema.Resource {
 	}
 }
 
-func resourceCreateAsset(d *schema.ResourceData, m interface{}) (err error) {
+func resourceCreateAsset(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 
 	fields := d.Get("fields").([]interface{})[0].(map[string]interface{})
@@ -164,7 +166,7 @@ func resourceCreateAsset(d *schema.ResourceData, m interface{}) (err error) {
 	files := fields["file"].([]interface{})
 
 	if len(files) == 0 {
-		return fmt.Errorf("file block not defined in asset")
+		return diag.Errorf("file block not defined in asset")
 	}
 
 	file := files[0].(map[string]interface{})
@@ -207,37 +209,37 @@ func resourceCreateAsset(d *schema.ResourceData, m interface{}) (err error) {
 		}
 	}
 
-	if err = client.Assets.Upsert(d.Get("space_id").(string), asset); err != nil {
-		return err
+	if err := client.Assets.Upsert(d.Get("space_id").(string), asset); err != nil {
+		return parseError(err)
 	}
 
-	if err = client.Assets.Process(d.Get("space_id").(string), asset); err != nil {
-		return err
+	if err := client.Assets.Process(d.Get("space_id").(string), asset); err != nil {
+		return parseError(err)
 	}
 
 	d.SetId(asset.Sys.ID)
 
 	if err := setAssetProperties(d, asset); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	time.Sleep(1 * time.Second) // avoid race conditions with version mismatches
 
-	if err = setAssetState(d, m); err != nil {
-		return err
+	if err := setAssetState(d, m); err != nil {
+		return parseError(err)
 	}
 
-	return err
+	return nil
 }
 
-func resourceUpdateAsset(d *schema.ResourceData, m interface{}) (err error) {
+func resourceUpdateAsset(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	assetID := d.Id()
 
-	_, err = client.Assets.Get(spaceID, assetID)
+	_, err := client.Assets.Get(spaceID, assetID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	fields := d.Get("fields").([]interface{})[0].(map[string]interface{})
@@ -259,7 +261,7 @@ func resourceUpdateAsset(d *schema.ResourceData, m interface{}) (err error) {
 	files := fields["file"].([]interface{})
 
 	if len(files) == 0 {
-		return fmt.Errorf("file block not defined in asset")
+		return diag.Errorf("file block not defined in asset")
 	}
 
 	file := files[0].(map[string]interface{})
@@ -303,24 +305,24 @@ func resourceUpdateAsset(d *schema.ResourceData, m interface{}) (err error) {
 	}
 
 	if err := client.Assets.Upsert(d.Get("space_id").(string), asset); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err = client.Assets.Process(d.Get("space_id").(string), asset); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(asset.Sys.ID)
 
 	if err := setAssetProperties(d, asset); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err = setAssetState(d, m); err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return err
+	return nil
 }
 
 func setAssetState(d *schema.ResourceData, m interface{}) (err error) {
@@ -354,31 +356,42 @@ func setAssetState(d *schema.ResourceData, m interface{}) (err error) {
 	return err
 }
 
-func resourceReadAsset(d *schema.ResourceData, m interface{}) (err error) {
+func resourceReadAsset(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	assetID := d.Id()
 
 	asset, err := client.Assets.Get(spaceID, assetID)
-	if _, ok := err.(contentful.NotFoundError); ok {
+	var notFoundError contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		d.SetId("")
 		return nil
 	}
 
-	return setAssetProperties(d, asset)
+	err = setAssetProperties(d, asset)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceDeleteAsset(d *schema.ResourceData, m interface{}) (err error) {
+func resourceDeleteAsset(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	assetID := d.Id()
 
 	asset, err := client.Assets.Get(spaceID, assetID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return client.Assets.Delete(spaceID, asset)
+	err = client.Assets.Delete(spaceID, asset)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
 func setAssetProperties(d *schema.ResourceData, asset *contentful.Asset) (err error) {

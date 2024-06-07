@@ -2,12 +2,23 @@ package contentful
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	contentful "github.com/labd/contentful-go"
 )
+
+func TestParseContentValue_String(t *testing.T) {
+	value := "hello"
+	assert.Equal(t, parseContentValue(value), value)
+}
+
+func TestParseContentValue_Json(t *testing.T) {
+	value := `{"foo": "bar", "baz": [1, 2, 3]}`
+	assert.Equal(t, parseContentValue(value), map[string]interface{}{"foo": "bar", "baz": []interface{}{float64(1), float64(2), float64(3)}})
+}
 
 func TestAccContentfulEntry_Basic(t *testing.T) {
 	var entry contentful.Entry
@@ -136,6 +147,11 @@ resource "contentful_contenttype" "mycontenttype" {
 	required  = true
 	type      = "Text"
   }
+  field {
+    id       = "field3"
+    name     = "Field 3"
+    type     = "RichText"
+  }
 }
 
 resource "contentful_entry" "myentry" {
@@ -152,6 +168,29 @@ resource "contentful_entry" "myentry" {
     id = "field2"
     content = "Bacon is healthy!"
     locale = "en-US"
+  }
+
+  field {
+    id = "field3"
+    locale = "en-US"
+    content = jsonencode({
+      data= {},
+      content= [
+        {
+          nodeType= "paragraph",
+          content= [
+            {
+              nodeType= "text",
+              marks= [],
+              value= "This is another paragraph.",
+              data= {},
+            },
+          ],
+          data= {},
+        }
+      ],
+      nodeType= "document"
+    })
   }
   published = true
   archived  = false
@@ -183,6 +222,11 @@ resource "contentful_contenttype" "mycontenttype" {
 	required  = true
 	type      = "Text"
   }
+  field {
+    id       = "field3"
+    name     = "Field 3"
+    type     = "RichText"
+  }
 }
 
 resource "contentful_entry" "myentry" {
@@ -199,6 +243,28 @@ resource "contentful_entry" "myentry" {
     id = "field2"
     content = "Bacon is healthy!"
     locale = "en-US"
+  }
+  field {
+    id = "field3"
+    locale = "en-US"
+    content = jsonencode({
+      data= {},
+      content= [
+        {
+          nodeType= "paragraph",
+          content= [
+            {
+              nodeType= "text",
+              marks= [],
+              value= "This is another paragraph.",
+              data= {},
+            },
+          ],
+          data= {},
+        }
+      ],
+      nodeType= "document"
+    })
   }
   published = false
   archived  = false

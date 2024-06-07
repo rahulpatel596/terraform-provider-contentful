@@ -1,6 +1,9 @@
 package contentful
 
 import (
+	"context"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
 )
@@ -9,10 +12,10 @@ func resourceContentfulWebhook() *schema.Resource {
 	return &schema.Resource{
 		Description: "A Contentful Webhook represents a webhook that can be used to notify external services of changes in a space.",
 
-		Create: resourceCreateWebhook,
-		Read:   resourceReadWebhook,
-		Update: resourceUpdateWebhook,
-		Delete: resourceDeleteWebhook,
+		CreateContext: resourceCreateWebhook,
+		ReadContext:   resourceReadWebhook,
+		UpdateContext: resourceUpdateWebhook,
+		DeleteContext: resourceDeleteWebhook,
 
 		Schema: map[string]*schema.Schema{
 			"version": {
@@ -58,7 +61,7 @@ func resourceContentfulWebhook() *schema.Resource {
 	}
 }
 
-func resourceCreateWebhook(d *schema.ResourceData, m interface{}) (err error) {
+func resourceCreateWebhook(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 
@@ -71,14 +74,14 @@ func resourceCreateWebhook(d *schema.ResourceData, m interface{}) (err error) {
 		HTTPBasicPassword: d.Get("http_basic_auth_password").(string),
 	}
 
-	err = client.Webhooks.Upsert(spaceID, webhook)
+	err := client.Webhooks.Upsert(spaceID, webhook)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = setWebhookProperties(d, webhook)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(webhook.Sys.ID)
@@ -86,14 +89,14 @@ func resourceCreateWebhook(d *schema.ResourceData, m interface{}) (err error) {
 	return nil
 }
 
-func resourceUpdateWebhook(d *schema.ResourceData, m interface{}) (err error) {
+func resourceUpdateWebhook(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	webhookID := d.Id()
 
 	webhook, err := client.Webhooks.Get(spaceID, webhookID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	webhook.Name = d.Get("name").(string)
@@ -105,12 +108,12 @@ func resourceUpdateWebhook(d *schema.ResourceData, m interface{}) (err error) {
 
 	err = client.Webhooks.Upsert(spaceID, webhook)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = setWebhookProperties(d, webhook)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(webhook.Sys.ID)
@@ -118,32 +121,38 @@ func resourceUpdateWebhook(d *schema.ResourceData, m interface{}) (err error) {
 	return nil
 }
 
-func resourceReadWebhook(d *schema.ResourceData, m interface{}) error {
+func resourceReadWebhook(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	webhookID := d.Id()
 
 	webhook, err := client.Webhooks.Get(spaceID, webhookID)
-	if _, ok := err.(contentful.NotFoundError); ok {
+	var notFoundError contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		d.SetId("")
 		return nil
 	}
 
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return setWebhookProperties(d, webhook)
+	err = setWebhookProperties(d, webhook)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceDeleteWebhook(d *schema.ResourceData, m interface{}) (err error) {
+func resourceDeleteWebhook(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	webhookID := d.Id()
 
 	webhook, err := client.Webhooks.Get(spaceID, webhookID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = client.Webhooks.Delete(spaceID, webhook)
@@ -151,7 +160,7 @@ func resourceDeleteWebhook(d *schema.ResourceData, m interface{}) (err error) {
 		return nil
 	}
 
-	return err
+	return parseError(err)
 }
 
 func setWebhookProperties(d *schema.ResourceData, webhook *contentful.Webhook) (err error) {

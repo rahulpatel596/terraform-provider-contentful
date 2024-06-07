@@ -1,6 +1,9 @@
 package contentful
 
 import (
+	"context"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
 )
@@ -9,10 +12,10 @@ func resourceContentfulAPIKey() *schema.Resource {
 	return &schema.Resource{
 		Description: "A Contentful API Key represents a token that can be used to authenticate against the Contentful Content Delivery API and Content Preview API.",
 
-		Create: resourceCreateAPIKey,
-		Read:   resourceReadAPIKey,
-		Update: resourceUpdateAPIKey,
-		Delete: resourceDeleteAPIKey,
+		CreateContext: resourceCreateAPIKey,
+		ReadContext:   resourceReadAPIKey,
+		UpdateContext: resourceUpdateAPIKey,
+		DeleteContext: resourceDeleteAPIKey,
 
 		Schema: map[string]*schema.Schema{
 			"version": {
@@ -39,7 +42,7 @@ func resourceContentfulAPIKey() *schema.Resource {
 	}
 }
 
-func resourceCreateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
+func resourceCreateAPIKey(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 
 	apiKey := &contentful.APIKey{
@@ -47,13 +50,13 @@ func resourceCreateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
 		Description: d.Get("description").(string),
 	}
 
-	err = client.APIKeys.Upsert(d.Get("space_id").(string), apiKey)
+	err := client.APIKeys.Upsert(d.Get("space_id").(string), apiKey)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err := setAPIKeyProperties(d, apiKey); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(apiKey.Sys.ID)
@@ -61,14 +64,14 @@ func resourceCreateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
 	return nil
 }
 
-func resourceUpdateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
+func resourceUpdateAPIKey(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	apiKeyID := d.Id()
 
 	apiKey, err := client.APIKeys.Get(spaceID, apiKeyID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	apiKey.Name = d.Get("name").(string)
@@ -76,11 +79,11 @@ func resourceUpdateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
 
 	err = client.APIKeys.Upsert(spaceID, apiKey)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err := setAPIKeyProperties(d, apiKey); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(apiKey.Sys.ID)
@@ -88,31 +91,42 @@ func resourceUpdateAPIKey(d *schema.ResourceData, m interface{}) (err error) {
 	return nil
 }
 
-func resourceReadAPIKey(d *schema.ResourceData, m interface{}) (err error) {
+func resourceReadAPIKey(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	apiKeyID := d.Id()
 
 	apiKey, err := client.APIKeys.Get(spaceID, apiKeyID)
-	if _, ok := err.(contentful.NotFoundError); ok {
+	var notFoundError contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		d.SetId("")
 		return nil
 	}
 
-	return setAPIKeyProperties(d, apiKey)
+	err = setAPIKeyProperties(d, apiKey)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceDeleteAPIKey(d *schema.ResourceData, m interface{}) (err error) {
+func resourceDeleteAPIKey(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	apiKeyID := d.Id()
 
 	apiKey, err := client.APIKeys.Get(spaceID, apiKeyID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return client.APIKeys.Delete(spaceID, apiKey)
+	err = client.APIKeys.Delete(spaceID, apiKey)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
 func setAPIKeyProperties(d *schema.ResourceData, apiKey *contentful.APIKey) error {
