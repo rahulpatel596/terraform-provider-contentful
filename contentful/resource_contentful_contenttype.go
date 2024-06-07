@@ -1,6 +1,8 @@
 package contentful
 
 import (
+	"context"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
 )
@@ -9,10 +11,10 @@ func resourceContentfulContentType() *schema.Resource {
 	return &schema.Resource{
 		Description: "A Contentful Content Type represents a structure for entries.",
 
-		Create: resourceContentTypeCreate,
-		Read:   resourceContentTypeRead,
-		Update: resourceContentTypeUpdate,
-		Delete: resourceContentTypeDelete,
+		CreateContext: resourceContentTypeCreate,
+		ReadContext:   resourceContentTypeRead,
+		UpdateContext: resourceContentTypeUpdate,
+		DeleteContext: resourceContentTypeDelete,
 
 		Schema: map[string]*schema.Schema{
 			"space_id": {
@@ -111,7 +113,7 @@ func resourceContentfulContentType() *schema.Resource {
 	}
 }
 
-func resourceContentTypeCreate(d *schema.ResourceData, m interface{}) (err error) {
+func resourceContentTypeCreate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 
@@ -146,7 +148,7 @@ func resourceContentTypeCreate(d *schema.ResourceData, m interface{}) (err error
 		if validations, ok := field["validations"].([]interface{}); ok {
 			parsedValidations, err := contentful.ParseValidations(validations)
 			if err != nil {
-				return err
+				return parseError(err)
 			}
 
 			contentfulField.Validations = parsedValidations
@@ -159,16 +161,16 @@ func resourceContentTypeCreate(d *schema.ResourceData, m interface{}) (err error
 		ct.Fields = append(ct.Fields, contentfulField)
 	}
 
-	if err = client.ContentTypes.Upsert(spaceID, ct); err != nil {
-		return err
+	if err := client.ContentTypes.Upsert(spaceID, ct); err != nil {
+		return parseError(err)
 	}
 
-	if err = client.ContentTypes.Activate(spaceID, ct); err != nil {
-		return err
+	if err := client.ContentTypes.Activate(spaceID, ct); err != nil {
+		return parseError(err)
 	}
 
-	if err = setContentTypeProperties(d, ct); err != nil {
-		return err
+	if err := setContentTypeProperties(d, ct); err != nil {
+		return parseError(err)
 	}
 
 	d.SetId(ct.Sys.ID)
@@ -176,16 +178,19 @@ func resourceContentTypeCreate(d *schema.ResourceData, m interface{}) (err error
 	return nil
 }
 
-func resourceContentTypeRead(d *schema.ResourceData, m interface{}) (err error) {
+func resourceContentTypeRead(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 
-	_, err = client.ContentTypes.Get(spaceID, d.Id())
+	_, err := client.ContentTypes.Get(spaceID, d.Id())
+	if err != nil {
+		return parseError(err)
+	}
 
-	return err
+	return nil
 }
 
-func resourceContentTypeUpdate(d *schema.ResourceData, m interface{}) (err error) {
+func resourceContentTypeUpdate(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var existingFields []*contentful.Field
 	var deletedFields []*contentful.Field
 
@@ -194,7 +199,7 @@ func resourceContentTypeUpdate(d *schema.ResourceData, m interface{}) (err error
 
 	ct, err := client.ContentTypes.Get(spaceID, d.Id())
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	ct.Name = d.Get("name").(string)
@@ -220,44 +225,48 @@ func resourceContentTypeUpdate(d *schema.ResourceData, m interface{}) (err error
 	// Omit the removed fields and publish the new version of the content type,
 	// followed by the field removal and final publish.
 	if err = client.ContentTypes.Upsert(spaceID, ct); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err = client.ContentTypes.Activate(spaceID, ct); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if deletedFields != nil {
 		ct.Fields = existingFields
 
 		if err = client.ContentTypes.Upsert(spaceID, ct); err != nil {
-			return err
+			return parseError(err)
 		}
 
 		if err = client.ContentTypes.Activate(spaceID, ct); err != nil {
-			return err
+			return parseError(err)
 		}
 	}
 
-	return setContentTypeProperties(d, ct)
+	if err = setContentTypeProperties(d, ct); err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceContentTypeDelete(d *schema.ResourceData, m interface{}) (err error) {
+func resourceContentTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 
 	ct, err := client.ContentTypes.Get(spaceID, d.Id())
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = client.ContentTypes.Deactivate(spaceID, ct)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	if err = client.ContentTypes.Delete(spaceID, ct); err != nil {
-		return err
+		return parseError(err)
 	}
 
 	return nil

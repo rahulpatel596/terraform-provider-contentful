@@ -1,6 +1,9 @@
 package contentful
 
 import (
+	"context"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
 )
@@ -9,10 +12,10 @@ func resourceContentfulLocale() *schema.Resource {
 	return &schema.Resource{
 		Description: "A Contentful Locale represents a language and region combination.",
 
-		Create: resourceCreateLocale,
-		Read:   resourceReadLocale,
-		Update: resourceUpdateLocale,
-		Delete: resourceDeleteLocale,
+		CreateContext: resourceCreateLocale,
+		ReadContext:   resourceReadLocale,
+		UpdateContext: resourceUpdateLocale,
+		DeleteContext: resourceDeleteLocale,
 
 		Schema: map[string]*schema.Schema{
 			"version": {
@@ -55,7 +58,7 @@ func resourceContentfulLocale() *schema.Resource {
 	}
 }
 
-func resourceCreateLocale(d *schema.ResourceData, m interface{}) (err error) {
+func resourceCreateLocale(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 
@@ -68,14 +71,14 @@ func resourceCreateLocale(d *schema.ResourceData, m interface{}) (err error) {
 		CMA:          d.Get("cma").(bool),
 	}
 
-	err = client.Locales.Upsert(spaceID, locale)
+	err := client.Locales.Upsert(spaceID, locale)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = setLocaleProperties(d, locale)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	d.SetId(locale.Sys.ID)
@@ -83,32 +86,38 @@ func resourceCreateLocale(d *schema.ResourceData, m interface{}) (err error) {
 	return nil
 }
 
-func resourceReadLocale(d *schema.ResourceData, m interface{}) error {
+func resourceReadLocale(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	localeID := d.Id()
 
 	locale, err := client.Locales.Get(spaceID, localeID)
-	if _, ok := err.(*contentful.NotFoundError); ok {
+	var notFoundError *contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		d.SetId("")
 		return nil
 	}
 
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
-	return setLocaleProperties(d, locale)
+	err = setLocaleProperties(d, locale)
+	if err != nil {
+		return parseError(err)
+	}
+
+	return nil
 }
 
-func resourceUpdateLocale(d *schema.ResourceData, m interface{}) (err error) {
+func resourceUpdateLocale(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	localeID := d.Id()
 
 	locale, err := client.Locales.Get(spaceID, localeID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	locale.Name = d.Get("name").(string)
@@ -120,34 +129,35 @@ func resourceUpdateLocale(d *schema.ResourceData, m interface{}) (err error) {
 
 	err = client.Locales.Upsert(spaceID, locale)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = setLocaleProperties(d, locale)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	return nil
 }
 
-func resourceDeleteLocale(d *schema.ResourceData, m interface{}) (err error) {
+func resourceDeleteLocale(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	client := m.(*contentful.Client)
 	spaceID := d.Get("space_id").(string)
 	localeID := d.Id()
 
 	locale, err := client.Locales.Get(spaceID, localeID)
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	err = client.Locales.Delete(spaceID, locale)
-	if _, ok := err.(*contentful.NotFoundError); ok {
+	var notFoundError *contentful.NotFoundError
+	if errors.As(err, &notFoundError) {
 		return nil
 	}
 
 	if err != nil {
-		return err
+		return parseError(err)
 	}
 
 	return nil

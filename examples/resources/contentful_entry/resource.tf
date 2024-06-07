@@ -13,6 +13,28 @@ resource "contentful_entry" "example_entry" {
     content = "Lettuce is healthy!"
     locale  = "en-US"
   }
+  field {
+    id     = "content"
+    locale = "en-US"
+    content = jsonencode({
+      data = {},
+      content = [
+        {
+          nodeType = "paragraph",
+          content = [
+            {
+              nodeType = "text",
+              marks    = [],
+              value    = "This is a paragraph",
+              data     = {},
+            },
+          ],
+          data = {},
+        }
+      ],
+      nodeType = "document"
+    })
+  }
   published  = false
   archived   = false
   depends_on = [contentful_contenttype.mycontenttype]
