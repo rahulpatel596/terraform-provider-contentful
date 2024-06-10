@@ -53,3 +53,4 @@ signs:
       - "${signature}"
       - "--detach-sign"
       - "${artifact}"
+    stdin: '{{ .Env.GPG_PASSWORD }}'
