@@ -26,7 +26,7 @@ func main() {
 
 	opts := &plugin.ServeOpts{
 		Debug:        debug,
-		ProviderAddr: "registry.terraform.io/labd/contentful",
+		ProviderAddr: "registry.terraform.io/rahulpatel596/contentful",
 		ProviderFunc: func() *schema.Provider {
 			return contentful.Provider()
 		},
