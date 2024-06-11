@@ -1,4 +1,4 @@
-module github.com/labd/terraform-provider-contentful
+module github.com/rahulpatel596/terraform-provider-contentful
 
 go 1.21
 
