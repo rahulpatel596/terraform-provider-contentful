@@ -23,13 +23,7 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      - name: Install signore
-        run: |
-          go get github.com/goreleaser/signore
-          echo "$HOME/go/bin" >> $GITHUB_PATH
-          export PATH=$PATH:$HOME/go/bin
-          echo "PATH after update: $PATH"
-        shell: bash
+   
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3.1.0
         with:
