@@ -49,5 +49,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_SECRET_2 }}
           passphrase: ${{ secrets.PASSPHRASE }}
         env:
+          gpg_private_key: ${{ secrets.GPG_SECRET_2 }}
+          passphrase: ${{ secrets.PASSPHRASE }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
