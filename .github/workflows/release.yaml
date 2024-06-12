@@ -45,7 +45,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v3.1.0
         with:
           version: latest
-          args: release --rm-dist
+          args: release --snapshot
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
         env:
