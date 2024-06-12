@@ -25,7 +25,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
       - name: Install signore
         run: |
-          go install github.com/goreleaser/signore@latest
+          go get github.com/goreleaser/signore
           echo "$HOME/go/bin" >> $GITHUB_PATH
           export PATH=$PATH:$HOME/go/bin
           echo "PATH after update: $PATH"
