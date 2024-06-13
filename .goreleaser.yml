@@ -40,12 +40,6 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
-release:
-  extra_files:
-    - glob: 'terraform-registry-manifest.json'
-      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
-  ids:
-    - none
 
 signs:
   - artifacts: checksum
