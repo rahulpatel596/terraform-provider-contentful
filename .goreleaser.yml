@@ -41,6 +41,9 @@ changelog:
       - "^docs:"
       - "^test:"
 release:
+  github:
+    owner: rahulpatel596
+    name: terraform-provider-contentful
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
