@@ -54,7 +54,6 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
-  disable: false
   github:
-  owner: rahulpatel596
-  name: terraform-provider-contentful
+    owner: rahulpatel596
+    name: terraform-provider-contentful
