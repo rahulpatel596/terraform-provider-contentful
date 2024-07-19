@@ -2,6 +2,7 @@ package contentful
 
 import (
 	"context"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
@@ -251,25 +252,34 @@ func resourceContentTypeUpdate(_ context.Context, d *schema.ResourceData, m inte
 	return nil
 }
 
-func resourceContentTypeDelete(_ context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := m.(*contentful.Client)
-	spaceID := d.Get("space_id").(string)
+func resourceContentTypeDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+    client := m.(*contentful.Client)
+    spaceID := d.Get("space_id").(string)
 
-	ct, err := client.ContentTypes.Get(spaceID, d.Id())
-	if err != nil {
-		return parseError(err)
-	}
+    // Fetch the content type
+    ct, err := client.ContentTypes.Get(spaceID, d.Id())
+    if err != nil {
+        // Check if the error is a not found error
+        return parseError(err)
+    }
 
-	err = client.ContentTypes.Deactivate(spaceID, ct)
-	if err != nil {
-		return parseError(err)
-	}
+    if ct == nil {
+        return diag.Errorf("content type %s not found in space %s", d.Id(), spaceID)
+    }
 
-	if err = client.ContentTypes.Delete(spaceID, ct); err != nil {
-		return parseError(err)
-	}
+    // Attempt to deactivate the content type
+    err = client.ContentTypes.Deactivate(spaceID, ct)
+    if err != nil {
+        return parseError(err)
+    }
 
-	return nil
+    // Attempt to delete the content type
+    err = client.ContentTypes.Delete(spaceID, ct)
+    if err != nil {
+        return parseError(err)
+    }
+
+    return nil
 }
 
 func setContentTypeProperties(d *schema.ResourceData, ct *contentful.ContentType) (err error) {
