@@ -3,8 +3,9 @@ package contentful
 import (
 	"context"
 	"errors"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
@@ -17,7 +18,9 @@ func resourceContentfulAsset() *schema.Resource {
 		ReadContext:   resourceReadAsset,
 		UpdateContext: resourceUpdateAsset,
 		DeleteContext: resourceDeleteAsset,
-
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 		Schema: map[string]*schema.Schema{
 			"asset_id": {
 				Type:     schema.TypeString,

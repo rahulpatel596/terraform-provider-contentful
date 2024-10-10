@@ -16,7 +16,9 @@ func resourceContentfulContentType() *schema.Resource {
 		ReadContext:   resourceContentTypeRead,
 		UpdateContext: resourceContentTypeUpdate,
 		DeleteContext: resourceContentTypeDelete,
-
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 		Schema: map[string]*schema.Schema{
 			"space_id": {
 				Type:     schema.TypeString,

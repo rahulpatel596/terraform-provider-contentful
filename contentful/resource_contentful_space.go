@@ -3,6 +3,7 @@ package contentful
 import (
 	"context"
 	"errors"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/labd/contentful-go"
@@ -16,6 +17,9 @@ func resourceContentfulSpace() *schema.Resource {
 		ReadContext:   resourceSpaceRead,
 		UpdateContext: resourceSpaceUpdate,
 		DeleteContext: resourceSpaceDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"version": {
